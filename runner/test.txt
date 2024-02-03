@@ -1,0 +1,76 @@
+StarkProof {
+    config: StarkConfig {
+        traces: TracesConfig {
+            original: TableCommitmentConfig {
+                n_columns: 7,
+                vector: VectorCommitmentConfig {
+                    height: 22,
+                    n_verifier_friendly_commitment_layers: 22,
+                },
+            },
+            interaction: TableCommitmentConfig {
+                n_columns: 3,
+                vector: VectorCommitmentConfig {
+                    height: 22,
+                    n_verifier_friendly_commitment_layers: 22,
+                },
+            },
+        },
+        composition: TableCommitmentConfig {
+            n_columns: 2,
+            vector: VectorCommitmentConfig {
+                height: 22,
+                n_verifier_friendly_commitment_layers: 22,
+            },
+        },
+        fri: FriConfig {
+            log_input_size: 22,
+            n_layers: 5,
+            inner_layers: [
+                TableCommitmentConfig {
+                    n_columns: 8,
+                    vector: VectorCommitmentConfig {
+                        height: 18,
+                        n_verifier_friendly_commitment_layers: 22,
+                    },
+                },
+                TableCommitmentConfig {
+                    n_columns: 6,
+                    vector: VectorCommitmentConfig {
+                        height: 15,
+                        n_verifier_friendly_commitment_layers: 22,
+                    },
+                },
+                TableCommitmentConfig {
+                    n_columns: 4,
+                    vector: VectorCommitmentConfig {
+                        height: 13,
+                        n_verifier_friendly_commitment_layers: 22,
+                    },
+                },
+                TableCommitmentConfig {
+                    n_columns: 4,
+                    vector: VectorCommitmentConfig {
+                        height: 11,
+                        n_verifier_friendly_commitment_layers: 22,
+                    },
+                },
+            ],
+            fri_step_sizes: [
+                0,
+                4,
+                3,
+                2,
+                2,
+            ],
+            log_last_layer_degree_bound: 7,
+        },
+        proof_of_work: ProofOfWorkConfig {
+            n_bits: 30,
+        },
+        log_trace_domain_size: 18,
+        n_queries: 18,
+        log_n_cosets: 4,
+        n_verifier_friendly_commitment_layers: 22,
+    },
+}
