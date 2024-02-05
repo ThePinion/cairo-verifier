@@ -10,6 +10,7 @@ anyhow.workspace = true
 cairo-args-runner.workspace = true
 clap.workspace = true
 lalrpop-util.workspace = true
+regex = "1.10.3"
 serde.workspace = true
 serde_json.workspace = true
 

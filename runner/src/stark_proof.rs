@@ -1,3 +1,5 @@
+use crate::ast::{Expr, Exprs};
+
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct StarkProof {
     pub config: StarkConfig,
@@ -21,7 +23,7 @@ pub struct TracesConfig {
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct TableCommitmentConfig {
     pub n_columns: u32,
-    pub vector: VectorCommitmentConfig
+    pub vector: VectorCommitmentConfig,
 }
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct VectorCommitmentConfig {
@@ -40,4 +42,93 @@ pub struct FriConfig {
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct ProofOfWorkConfig {
     pub n_bits: u32,
+}
+
+
+pub trait IntoAst {
+    fn into_ast(self) -> Vec<Expr>;
+}
+
+impl IntoAst for u32 {
+    fn into_ast(self) -> Vec<Expr> {
+        vec![Expr::Value(format!("{}", self))]
+    }
+}
+
+impl IntoAst for StarkProof {
+    fn into_ast(self) -> Vec<Expr> {
+        self.config.into_ast()
+    }
+}
+
+impl IntoAst for StarkConfig {
+    fn into_ast(self) -> Vec<Expr> {
+        let mut exprs = vec![];
+        exprs.append(&mut self.traces.into_ast());
+        exprs.append(&mut self.composition.into_ast());
+        exprs.append(&mut self.fri.into_ast());
+        exprs.append(&mut self.proof_of_work.into_ast());
+        exprs.append(&mut self.log_trace_domain_size.into_ast());
+        exprs.append(&mut self.n_queries.into_ast());
+        exprs.append(&mut self.log_n_cosets.into_ast());
+        exprs.append(&mut self.n_verifier_friendly_commitment_layers.into_ast());
+        exprs
+    }
+}
+
+impl IntoAst for TracesConfig {
+    fn into_ast(self) -> Vec<Expr> {
+        let mut exprs = vec![];
+        exprs.append(&mut self.original.into_ast());
+        exprs.append(&mut self.interaction.into_ast());
+        exprs
+    }
+}
+
+impl IntoAst for TableCommitmentConfig {
+    fn into_ast(self) -> Vec<Expr> {
+        let mut exprs = vec![];
+        exprs.append(&mut self.n_columns.into_ast());
+        exprs.append(&mut self.vector.into_ast());
+        exprs
+    }
+}
+
+impl IntoAst for VectorCommitmentConfig {
+    fn into_ast(self) -> Vec<Expr> {
+        let mut exprs = vec![];
+        exprs.append(&mut self.height.into_ast());
+        exprs.append(&mut self.n_verifier_friendly_commitment_layers.into_ast());
+        exprs
+    }
+}
+
+impl IntoAst for FriConfig {
+    fn into_ast(self) -> Vec<Expr> {
+        let mut exprs = vec![];
+        exprs.append(&mut self.log_input_size.into_ast());
+        exprs.append(&mut self.n_layers.into_ast());
+        exprs.append(&mut self.inner_layers.into_ast());
+        exprs.append(&mut self.fri_step_sizes.into_ast());
+        exprs.append(&mut self.log_last_layer_degree_bound.into_ast());
+        exprs
+    }
+}
+
+impl IntoAst for ProofOfWorkConfig {
+    fn into_ast(self) -> Vec<Expr> {
+        vec![Expr::Value(format!("{}", self.n_bits))]
+    }
+}
+
+impl <T> IntoAst for Vec<T> where T: IntoAst {
+    fn into_ast(self) -> Vec<Expr> {
+        vec![Expr::Array(self.into_iter().flat_map(|x| x.into_ast()).collect())]
+    }
+}
+
+impl From<StarkProof> for Exprs {
+    fn from(proof: StarkProof) -> Self {
+        Exprs(proof.into_ast())
+    }
 }

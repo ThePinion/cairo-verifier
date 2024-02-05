@@ -4,13 +4,14 @@ use cairo_args_runner::{run, Arg, VecFelt252};
 use clap::Parser;
 use lalrpop_util::lalrpop_mod;
 
-use crate::{json_parser::ProofJSON, stark_proof::StarkProof};
+use crate::{ast::Exprs, json_parser::ProofJSON, stark_proof::StarkProof};
 
 mod ast;
 mod json_parser;
 mod stark_proof;
 mod layout;
 mod utils;
+mod annotations;
 
 lalrpop_mod!(pub parser);
 
@@ -20,8 +21,10 @@ fn main() -> anyhow::Result<()> {
 
     let proof_json = serde_json::from_str::<ProofJSON>(&input)?;
     let stark_proof = StarkProof::try_from(proof_json)?;
+    let exprs = Exprs::from(stark_proof);
+    let result = exprs.to_string();
 
-    println!("{stark_proof:#?}");
+    println!("{result:?}");
     Ok(())
 }
 

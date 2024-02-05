@@ -111,7 +111,7 @@ impl ProofJSON {
                 .iter()
                 .zip(layer_log_sizes[2..].iter())
                 .map(|(layer_steps, layer_log_rows)| TableCommitmentConfig {
-                    n_columns: 2 * *layer_steps,
+                    n_columns: 2_u32.pow(*layer_steps),
                     vector: VectorCommitmentConfig {
                         height: *layer_log_rows,
                         n_verifier_friendly_commitment_layers:
@@ -137,8 +137,8 @@ impl ProofJSON {
     fn log_trace_domain_size(&self) -> anyhow::Result<u32> {
         let consts = self.public_input.layout.get_consts();
         let effective_component_height = Self::COMPONENT_HEIGHT * consts.cpu_component_step;
-        dbg!(log2_if_power_of_2(effective_component_height * self.public_input.n_steps)
-            .ok_or(anyhow::anyhow!("Invalid cpu component step")))
+        log2_if_power_of_2(effective_component_height * self.public_input.n_steps)
+            .ok_or(anyhow::anyhow!("Invalid cpu component step"))
     }
     fn log_eval_damain_size(&self) -> anyhow::Result<u32> {
         Ok(self.log_trace_domain_size()? + self.proof_parameters.stark.log_n_cosets)
@@ -151,6 +151,8 @@ impl ProofJSON {
         Ok(layer_log_sizes)
     }
 }
+
+
 
 impl TryFrom<ProofJSON> for StarkProof {
     fn try_from(value: ProofJSON) -> anyhow::Result<Self> {
