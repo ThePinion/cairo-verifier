@@ -1,9 +1,15 @@
-use super::extract::extract_annotations;
+use super::extract::{extract_annotations, extract_z_and_alpha};
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct ZAlpha {
     pub z: u32,
     pub alpha: u32,
+}
+
+impl ZAlpha {
+    pub fn extract(annotations: &[&str]) -> anyhow::Result<Self> {
+        extract_z_and_alpha(annotations)
+    }
 }
 
 pub enum Annotation {
@@ -21,13 +27,18 @@ pub enum Annotation {
     CompositionWitnessLeaves,
     CompositionWitnessAuthentications,
     FriWitnessesLeaves(usize),
-    FriWitnessesAuthentications(usize)
+    FriWitnessesAuthentications(usize),
 }
 
 impl Annotation {
-    pub fn extract(&self, annotations: &[&str]) -> Vec<u32>{
+    pub fn extract(&self, annotations: &[&str]) -> Vec<u32> {
         let PrefixAndKind { prefix, kinds } = self.prefix_and_kinds();
-        kinds.to_strs().iter().map(|k| extract_annotations(annotations, &prefix, k)).flatten().collect()
+        kinds
+            .to_strs()
+            .iter()
+            .map(|k| extract_annotations(annotations, &prefix, k))
+            .flatten()
+            .collect()
     }
 
     pub fn prefix_and_kinds(&self) -> PrefixAndKind {
@@ -101,7 +112,7 @@ pub enum AnnotationKinds {
     Hash,
     FieldElement,
     FieldElements,
-    DataAndHash
+    DataAndHash,
 }
 
 impl AnnotationKinds {

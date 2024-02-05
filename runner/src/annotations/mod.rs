@@ -1,13 +1,15 @@
-use self::annotation_kind::Annotation;
+use self::annotation_kind::{Annotation, ZAlpha};
 
 pub mod annotation_kind;
 pub mod extract;
 
 
-pub struct AnnotationData {
-    pub original_commitment_hash: Vec<u32>,
-    pub interaction_commitment_hash: Vec<u32>,
-    pub composition_commitment_hash: Vec<u32>,
+pub struct Annotations {
+    pub z: u32,
+    pub alpha: u32,
+    pub original_commitment_hash: u32,
+    pub interaction_commitment_hash: u32,
+    pub composition_commitment_hash: u32,
     pub oods_values: Vec<u32>,
     pub fri_layers_commitments: Vec<u32>,
     pub fri_last_layer_coefficients: Vec<u32>,
@@ -21,16 +23,22 @@ pub struct AnnotationData {
     pub fri_witnesses: Vec<FriWitness>,
 }
 
-impl AnnotationData {
+impl Annotations {
     #[rustfmt::skip]
-    pub fn new(annotations: &[&str], n_fri_layers: usize) -> AnnotationData {
-        AnnotationData {
+    pub fn new(annotations: &[&str], n_fri_layers: usize) -> anyhow::Result<Annotations> {
+        let ZAlpha {z, alpha} = ZAlpha::extract(annotations)?;
+        Ok(Annotations {
+            z,
+            alpha,
             original_commitment_hash: 
-                Annotation::OriginalCommitmentHash.extract(annotations),
+                *Annotation::OriginalCommitmentHash.extract(annotations)
+                    .get(0).ok_or(anyhow::anyhow!("No OriginalCommitmentHash in annotations!"))?,
             interaction_commitment_hash: 
-                Annotation::InteractionCommitmentHash.extract(annotations),
+                *Annotation::InteractionCommitmentHash.extract(annotations)
+                    .get(0).ok_or(anyhow::anyhow!("No InteractionCommitmentHash in annotations!"))?,
             composition_commitment_hash: 
-                Annotation::CompositionCommitmentHash.extract(annotations),
+                *Annotation::CompositionCommitmentHash.extract(annotations)
+                    .get(0).ok_or(anyhow::anyhow!("No CompositionCommitmentHash in annotations!"))?,
             oods_values: 
                 Annotation::OodsValues.extract(annotations),
             fri_layers_commitments: 
@@ -58,7 +66,7 @@ impl AnnotationData {
                 authentications: 
                     Annotation::FriWitnessesAuthentications(i).extract(annotations)
             }).collect()
-        }
+        })
     }
 }
 
