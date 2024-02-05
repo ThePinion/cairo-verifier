@@ -16,7 +16,7 @@ pub struct Annotations {
     pub oods_values: Vec<BigUint>,
     pub fri_layers_commitments: Vec<BigUint>,
     pub fri_last_layer_coefficients: Vec<BigUint>,
-    pub proof_of_work_nonce: Vec<BigUint>,
+    pub proof_of_work_nonce: BigUint,
     pub original_witness_leaves: Vec<BigUint>,
     pub original_witness_authentications: Vec<BigUint>,
     pub interaction_witness_leaves: Vec<BigUint>,
@@ -49,7 +49,8 @@ impl Annotations {
             fri_last_layer_coefficients: 
                 Annotation::FriLastLayerCoefficients.extract(annotations)?,
             proof_of_work_nonce: 
-                Annotation::ProofOfWorkNonce.extract(annotations)?,
+                Annotation::ProofOfWorkNonce.extract(annotations)?
+                    .get(0).ok_or(anyhow::anyhow!("No ProofOfWorkNonce in annotations!"))?.clone(),
             original_witness_leaves: 
                 Annotation::OriginalWitnessLeaves.extract(annotations)?,
             original_witness_authentications: 

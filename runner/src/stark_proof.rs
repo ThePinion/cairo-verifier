@@ -1,8 +1,11 @@
+use num_bigint::BigUint;
+
 use crate::ast::{Expr, Exprs};
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct StarkProof {
     pub config: StarkConfig,
+    pub unsent_commitment: StarkUnsentCommitment
 }
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct StarkConfig {
@@ -44,6 +47,31 @@ pub struct ProofOfWorkConfig {
     pub n_bits: u32,
 }
 
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
+pub struct StarkUnsentCommitment {
+    pub traces: TracesUnsentCommitment,
+    pub composition: BigUint,
+    pub oods_values: Vec<BigUint>,
+    pub fri: FriUnsentCommitment,
+    pub proof_of_work: ProofOfWorkUnsentCommitment,
+}
+
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
+pub struct TracesUnsentCommitment {
+    pub original: BigUint,
+    pub interaction: BigUint
+}
+
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
+pub struct FriUnsentCommitment {
+    pub inner_layers: Vec<BigUint>,
+    pub last_layer_coefficients: Vec<BigUint>
+}
+
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
+pub struct ProofOfWorkUnsentCommitment {
+    pub nonce: BigUint
+}
 
 pub trait IntoAst {
     fn into_ast(self) -> Vec<Expr>;
@@ -51,13 +79,19 @@ pub trait IntoAst {
 
 impl IntoAst for u32 {
     fn into_ast(self) -> Vec<Expr> {
-        vec![Expr::Value(format!("{}", self))]
+        vec![Expr::Value(format!("{self}"))]
+    }
+}
+
+impl IntoAst for BigUint {
+    fn into_ast(self) -> Vec<Expr> {
+        vec![Expr::Value(format!("{self}"))]
     }
 }
 
 impl IntoAst for StarkProof {
     fn into_ast(self) -> Vec<Expr> {
-        self.config.into_ast()
+        [self.config.into_ast(), self.unsent_commitment.into_ast()].concat()
     }
 }
 
@@ -112,6 +146,42 @@ impl IntoAst for FriConfig {
         exprs.append(&mut self.fri_step_sizes.into_ast());
         exprs.append(&mut self.log_last_layer_degree_bound.into_ast());
         exprs
+    }
+}
+
+impl IntoAst for StarkUnsentCommitment {
+    fn into_ast(self) -> Vec<Expr> {
+        let mut exprs = vec![];
+        exprs.append(&mut self.traces.into_ast());
+        exprs.append(&mut self.composition.into_ast());
+        exprs.append(&mut self.oods_values.into_ast());
+        exprs.append(&mut self.fri.into_ast());
+        exprs.append(&mut self.proof_of_work.into_ast());
+        exprs
+    }
+}
+
+impl IntoAst for TracesUnsentCommitment {
+    fn into_ast(self) -> Vec<Expr> {
+        let mut exprs = vec![];
+        exprs.append(&mut self.original.into_ast());
+        exprs.append(&mut self.interaction.into_ast());
+        exprs
+    }
+}
+
+impl IntoAst for FriUnsentCommitment {
+    fn into_ast(self) -> Vec<Expr> {
+        let mut exprs = vec![];
+        exprs.append(&mut self.inner_layers.into_ast());
+        exprs.append(&mut self.last_layer_coefficients.into_ast());
+        exprs
+    }
+}
+
+impl IntoAst for ProofOfWorkUnsentCommitment {
+    fn into_ast(self) -> Vec<Expr> {
+        vec![Expr::Value(format!("{}", self.nonce))]
     }
 }
 

@@ -4,8 +4,7 @@ use crate::{
     annotations::Annotations,
     layout::Layout,
     stark_proof::{
-        FriConfig, ProofOfWorkConfig, StarkConfig, StarkProof, TableCommitmentConfig, TracesConfig,
-        VectorCommitmentConfig,
+        FriConfig, FriUnsentCommitment, ProofOfWorkConfig, ProofOfWorkUnsentCommitment, StarkConfig, StarkProof, StarkUnsentCommitment, TableCommitmentConfig, TracesConfig, TracesUnsentCommitment, VectorCommitmentConfig
     },
     utils::log2_if_power_of_2,
 };
@@ -150,9 +149,23 @@ impl TryFrom<ProofJSON> for StarkProof {
                 .collect::<Vec<_>>(),
             value.proof_parameters.stark.fri.fri_step_list.len(),
         )?;
-        println!("{annotations:#?}");
         let config = value.to_stark_config()?;
-        Ok(StarkProof { config })
+        println!("{:?}", annotations.fri_last_layer_coefficients);
+        let unsent_commitment = StarkUnsentCommitment {
+            traces: TracesUnsentCommitment {
+                original: annotations.original_commitment_hash,
+                interaction: annotations.interaction_commitment_hash
+            },
+            composition: annotations.composition_commitment_hash,
+            oods_values: annotations.oods_values,
+            fri: FriUnsentCommitment {
+                inner_layers: annotations.fri_layers_commitments, last_layer_coefficients: annotations.fri_last_layer_coefficients
+            },
+            proof_of_work: ProofOfWorkUnsentCommitment{
+                nonce: annotations.proof_of_work_nonce
+            },
+        };
+        Ok(StarkProof { config, unsent_commitment })
     }
 
     type Error = anyhow::Error;

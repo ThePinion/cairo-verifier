@@ -9,6 +9,7 @@ trait FromStrHex: Sized {
 
 impl FromStrHex for BigUint {
     fn from_str_hex(mut val: &str) -> Option<Self> {
+        val = val.trim();
         if val.starts_with("0x") {
             val = &val[2..];
         }
