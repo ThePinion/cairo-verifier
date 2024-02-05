@@ -1,9 +1,11 @@
+use num_bigint::BigUint;
+
 use super::extract::{extract_annotations, extract_z_and_alpha};
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct ZAlpha {
-    pub z: u32,
-    pub alpha: u32,
+    pub z: BigUint,
+    pub alpha: BigUint,
 }
 
 impl ZAlpha {
@@ -31,14 +33,16 @@ pub enum Annotation {
 }
 
 impl Annotation {
-    pub fn extract(&self, annotations: &[&str]) -> Vec<u32> {
+    pub fn extract(&self, annotations: &[&str]) -> anyhow::Result<Vec<BigUint>> {
         let PrefixAndKind { prefix, kinds } = self.prefix_and_kinds();
-        kinds
+        Ok(kinds
             .to_strs()
             .iter()
             .map(|k| extract_annotations(annotations, &prefix, k))
+            .collect::<anyhow::Result<Vec<_>>>()?
+            .into_iter()
             .flatten()
-            .collect()
+            .collect())
     }
 
     pub fn prefix_and_kinds(&self) -> PrefixAndKind {

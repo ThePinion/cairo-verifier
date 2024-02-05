@@ -1,6 +1,20 @@
+use num_bigint::BigUint;
 use regex::Regex;
 
 use super::annotation_kind::ZAlpha;
+
+trait FromStrHex: Sized {
+    fn from_str_hex(val: &str) -> Option<Self>;
+}
+
+impl FromStrHex for BigUint {
+    fn from_str_hex(mut val: &str) -> Option<Self> {
+        if val.starts_with("0x") {
+            val = &val[2..];
+        }
+        BigUint::parse_bytes(val.as_bytes(), 16)
+    }
+}
 
 pub fn extract_z_and_alpha(annotations: &[&str]) -> anyhow::Result<ZAlpha> {
     let re = Regex::new(
@@ -11,8 +25,10 @@ pub fn extract_z_and_alpha(annotations: &[&str]) -> anyhow::Result<ZAlpha> {
 
     for annotation in annotations {
         for cap in re.captures_iter(annotation) {
-            let value = u32::from_str_radix(&cap[1], 16)?;
-            interaction_elements.push(value);
+            match BigUint::from_str_hex(&cap[1]) {
+                Some(value) => interaction_elements.push(value),
+                None => anyhow::bail!("Unable to parse"),
+            }
         }
     }
 
@@ -25,30 +41,32 @@ pub fn extract_z_and_alpha(annotations: &[&str]) -> anyhow::Result<ZAlpha> {
     }
 
     let z_alpha = ZAlpha {
-        z: interaction_elements[0],
-        alpha: interaction_elements[1],
+        z: interaction_elements[0].clone(),
+        alpha: interaction_elements[1].clone(),
     };
 
     Ok(z_alpha)
 }
 
-pub fn extract_annotations(annotations: &[&str], prefix: &str, kind: &str) -> Vec<u32> {
-    let pattern = format!(r"P->V\[(\d+):(\d+)\]: /cpu air/{}: .*{}\\((.+)\\)", regex::escape(prefix), kind);
+pub fn extract_annotations(
+    annotations: &[&str],
+    prefix: &str,
+    kind: &str,
+) -> anyhow::Result<Vec<BigUint>> {
+    let pattern = format!(r"P->V\[(\d+):(\d+)\]: /cpu air/{prefix}: .*{kind}\((.+)\)");
     let re = Regex::new(&pattern).unwrap();
-    let mut res: Vec<u32> = Vec::new();
+    let mut res = Vec::new();
 
     for line in annotations {
         if let Some(cap) = re.captures(line) {
             let str_value = &cap[3];
             if kind == "Field Elements" {
-                res.extend(str_value.split(",").filter_map(|x| u32::from_str_radix(x, 16).ok()));
-            } else {
-                if let Ok(value) = u32::from_str_radix(str_value, 16) {
-                    res.push(value);
-                }
+                res.extend(str_value.split(",").filter_map(BigUint::from_str_hex));
+            } else if let Some(val) = BigUint::from_str_hex(str_value) {
+                res.push(val)
             }
         }
     }
 
-    res
+    Ok(res)
 }

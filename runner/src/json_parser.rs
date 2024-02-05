@@ -1,6 +1,7 @@
 use serde::Deserialize;
 
 use crate::{
+    annotations::Annotations,
     layout::Layout,
     stark_proof::{
         FriConfig, ProofOfWorkConfig, StarkConfig, StarkProof, TableCommitmentConfig, TracesConfig,
@@ -12,13 +13,8 @@ use crate::{
 #[derive(Deserialize, Debug, Clone, PartialEq, PartialOrd)]
 pub struct ProofJSON {
     proof_parameters: ProofParameters,
-    annotations: Vec<Annotation>,
+    annotations: Vec<String>,
     public_input: PublicInput,
-}
-
-#[derive(Debug, Clone, PartialEq, PartialOrd)]
-pub struct Annotation {
-    pub val: String,
 }
 
 #[derive(Deserialize, Debug, Clone, PartialEq, PartialOrd)]
@@ -50,20 +46,12 @@ pub struct PublicInput {
     n_steps: u32,
 }
 
-impl<'de> Deserialize<'de> for Annotation {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        String::deserialize(deserializer).map(|val| Annotation { val })
-    }
-}
-
 impl ProofJSON {
     const COMPONENT_HEIGHT: u32 = 16;
     pub fn to_stark_config(&self) -> anyhow::Result<StarkConfig> {
         let stark = &self.proof_parameters.stark;
-        let n_verifier_friendly_commitment_layers = self.proof_parameters.n_verifier_friendly_commitment_layers;
+        let n_verifier_friendly_commitment_layers =
+            self.proof_parameters.n_verifier_friendly_commitment_layers;
         let consts = self.public_input.layout.get_consts();
 
         let log_eval_domain_size = self.log_eval_damain_size()?;
@@ -152,10 +140,17 @@ impl ProofJSON {
     }
 }
 
-
-
 impl TryFrom<ProofJSON> for StarkProof {
     fn try_from(value: ProofJSON) -> anyhow::Result<Self> {
+        let annotations = Annotations::new(
+            &value
+                .annotations
+                .iter()
+                .map(String::as_str)
+                .collect::<Vec<_>>(),
+            value.proof_parameters.stark.fri.fri_step_list.len(),
+        )?;
+        println!("{annotations:#?}");
         let config = value.to_stark_config()?;
         Ok(StarkProof { config })
     }
