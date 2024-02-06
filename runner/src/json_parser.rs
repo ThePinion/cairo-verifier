@@ -4,7 +4,7 @@ use crate::{
     annotations::Annotations,
     layout::Layout,
     stark_proof::{
-        FriConfig, FriLayerWitness, FriUnsentCommitment, FriWitness, ProofOfWorkConfig, ProofOfWorkUnsentCommitment, StarkConfig, StarkProof, StarkUnsentCommitment, StarkWitness, TableCommitmentConfig, TableCommitmentWitness, TableDecommitment, TracesConfig, TracesDecommitment, TracesUnsentCommitment, TracesWitness, VectorCommitmentConfig, VectorCommitmentWitness
+        FriConfig, FriLayerWitness, FriUnsentCommitment, FriWitness, ProofOfWorkConfig, ProofOfWorkUnsentCommitment, StarkConfig, StarkProof, StarkUnsentCommitment, StarkWitness, TableCommitmentConfig, TableCommitmentWitness, TableCommitmentWitnessFlat, TableDecommitment, TracesConfig, TracesDecommitment, TracesUnsentCommitment, TracesWitness, VectorCommitmentConfig, VectorCommitmentWitness, VectorCommitmentWitnessFlat
     },
     utils::log2_if_power_of_2,
 };
@@ -194,8 +194,8 @@ impl ProofJSON {
                 layers: annotations.fri_witnesses.iter().map(|w| FriLayerWitness {
                     n_leaves: w.leaves.len(),
                     leaves: w.leaves.clone(),
-                    table_witness: TableCommitmentWitness {
-                        vector: VectorCommitmentWitness {
+                    table_witness: TableCommitmentWitnessFlat {
+                        vector: VectorCommitmentWitnessFlat {
                             n_authentications: w.authentications.len(),
                             authentications: w.authentications.clone(),
                         },

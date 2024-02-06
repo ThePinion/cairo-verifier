@@ -113,6 +113,17 @@ pub struct VectorCommitmentWitness {
 }
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
+pub struct TableCommitmentWitnessFlat {
+    pub vector: VectorCommitmentWitnessFlat,
+}
+
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
+pub struct VectorCommitmentWitnessFlat {
+    pub n_authentications: usize,
+    pub authentications: Vec<BigUint>,
+}
+
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct FriWitness {
     pub layers: Vec<FriLayerWitness>,
 }
@@ -121,7 +132,7 @@ pub struct FriWitness {
 pub struct FriLayerWitness {
     pub n_leaves: usize,
     pub leaves: Vec<BigUint>,
-    pub table_witness: TableCommitmentWitness,
+    pub table_witness: TableCommitmentWitnessFlat,
 }
 
 pub trait IntoAst {
@@ -297,34 +308,49 @@ impl IntoAst for TableCommitmentWitness {
     }
 }
 
+impl IntoAst for TableCommitmentWitnessFlat {
+    fn into_ast(self) -> Vec<Expr> {
+        self.vector.into_ast()
+    }
+}
+
 impl IntoAst for VectorCommitmentWitness {
     fn into_ast(self) -> Vec<Expr> {
         let mut exprs = vec![Expr::Value(format!("{}", self.n_authentications))];
-        // exprs.append(
-        //     &mut self
-        //         .authentications
-        //         .iter()
-        //         .map(|x| x.into_ast())
-        //         .flatten()
-        //         .collect::<Vec<_>>(),
-        // );
-        exprs.append(self.authentications.into_ast().as_mut());
+        exprs.append(&mut self.authentications.into_ast());
+        exprs
+    }
+}
+
+impl IntoAst for VectorCommitmentWitnessFlat {
+    fn into_ast(self) -> Vec<Expr> {
+        let mut exprs = vec![Expr::Value(format!("{}", self.n_authentications))];
+        exprs.append(
+            &mut self
+                .authentications
+                .iter()
+                .map(|x| x.into_ast())
+                .flatten()
+                .collect::<Vec<_>>(),
+        );
         exprs
     }
 }
 
 impl IntoAst for FriWitness {
     fn into_ast(self) -> Vec<Expr> {
-        vec![Expr::Array( self.layers
-            .into_iter()
-            .flat_map(|layer| layer.into_ast())
-            .collect())]
+        // self.layers
+        //     .into_iter()
+        //     .flat_map(|layer| layer.into_ast())
+        //     .collect()
+        self.layers.into_ast()
     }
 }
 
 impl IntoAst for FriLayerWitness {
     fn into_ast(self) -> Vec<Expr> {
         let mut exprs = vec![Expr::Value(format!("{}", self.n_leaves))];
+        // exprs.append(self.leaves.into_ast().as_mut());
         exprs.append(
             &mut self
                 .leaves
