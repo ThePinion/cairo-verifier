@@ -4,7 +4,7 @@ use crate::{
     annotations::Annotations,
     layout::Layout,
     stark_proof::{
-        FriConfig, FriUnsentCommitment, ProofOfWorkConfig, ProofOfWorkUnsentCommitment, StarkConfig, StarkProof, StarkUnsentCommitment, TableCommitmentConfig, TracesConfig, TracesUnsentCommitment, VectorCommitmentConfig
+        FriConfig, FriLayerWitness, FriUnsentCommitment, FriWitness, ProofOfWorkConfig, ProofOfWorkUnsentCommitment, StarkConfig, StarkProof, StarkUnsentCommitment, StarkWitness, TableCommitmentConfig, TableCommitmentWitness, TableDecommitment, TracesConfig, TracesDecommitment, TracesUnsentCommitment, TracesWitness, VectorCommitmentConfig, VectorCommitmentWitness
     },
     utils::log2_if_power_of_2,
 };
@@ -47,7 +47,7 @@ pub struct PublicInput {
 
 impl ProofJSON {
     const COMPONENT_HEIGHT: u32 = 16;
-    pub fn to_stark_config(&self) -> anyhow::Result<StarkConfig> {
+    pub fn stark_config(&self) -> anyhow::Result<StarkConfig> {
         let stark = &self.proof_parameters.stark;
         let n_verifier_friendly_commitment_layers =
             self.proof_parameters.n_verifier_friendly_commitment_layers;
@@ -137,10 +137,80 @@ impl ProofJSON {
         }
         Ok(layer_log_sizes)
     }
+    fn stark_unsent_commitment(&self, annotations: &Annotations) -> StarkUnsentCommitment {
+        StarkUnsentCommitment {
+            traces: TracesUnsentCommitment {
+                original: annotations.original_commitment_hash.clone(),
+                interaction: annotations.interaction_commitment_hash.clone(),
+            },
+            composition: annotations.composition_commitment_hash.clone(),
+            oods_values: annotations.oods_values.clone(),
+            fri: FriUnsentCommitment {
+                inner_layers: annotations.fri_layers_commitments.clone(),
+                last_layer_coefficients: annotations.fri_last_layer_coefficients.clone(),
+            },
+            proof_of_work: ProofOfWorkUnsentCommitment {
+                nonce: annotations.proof_of_work_nonce.clone(),
+            },
+        }
+    }
+    fn stark_witness(&self, annotations: &Annotations) -> StarkWitness {
+        StarkWitness {
+            traces_decommitment: TracesDecommitment {
+                original: TableDecommitment {
+                    n_values: annotations.original_witness_leaves.len(),
+                    values: annotations.original_witness_leaves.clone(),
+                },
+                interaction: TableDecommitment {
+                    n_values: annotations.interaction_witness_leaves.len(),
+                    values: annotations.interaction_witness_leaves.clone(),
+                },
+            },
+            traces_witness: TracesWitness {
+                original: TableCommitmentWitness {
+                    vector: VectorCommitmentWitness {
+                        n_authentications: annotations.original_witness_authentications.len(),
+                        authentications: annotations.original_witness_authentications.clone(),
+                    },
+                },
+                interaction: TableCommitmentWitness {
+                    vector: VectorCommitmentWitness {
+                        n_authentications: annotations.interaction_witness_authentications.len(),
+                        authentications: annotations.interaction_witness_authentications.clone(),
+                    },
+                },
+            },
+            composition_decommitment: TableDecommitment {
+                n_values: annotations.composition_witness_leaves.len(),
+                values: annotations.composition_witness_leaves.clone(),
+            },
+            composition_witness: TableCommitmentWitness {
+                vector: VectorCommitmentWitness {
+                    n_authentications: annotations.composition_witness_authentications.len(),
+                    authentications: annotations.composition_witness_authentications.clone(),
+                },
+            },
+            fri_witness: FriWitness {
+                layers: annotations.fri_witnesses.iter().map(|w| FriLayerWitness {
+                    n_leaves: w.leaves.len(),
+                    leaves: w.leaves.clone(),
+                    table_witness: TableCommitmentWitness {
+                        vector: VectorCommitmentWitness {
+                            n_authentications: w.authentications.len(),
+                            authentications: w.authentications.clone(),
+                        },
+                    },
+                }).collect(),
+            },
+        }
+    }
 }
 
 impl TryFrom<ProofJSON> for StarkProof {
+    type Error = anyhow::Error;
     fn try_from(value: ProofJSON) -> anyhow::Result<Self> {
+        let config = value.stark_config()?;
+
         let annotations = Annotations::new(
             &value
                 .annotations
@@ -149,24 +219,13 @@ impl TryFrom<ProofJSON> for StarkProof {
                 .collect::<Vec<_>>(),
             value.proof_parameters.stark.fri.fri_step_list.len(),
         )?;
-        let config = value.to_stark_config()?;
-        println!("{:?}", annotations.fri_last_layer_coefficients);
-        let unsent_commitment = StarkUnsentCommitment {
-            traces: TracesUnsentCommitment {
-                original: annotations.original_commitment_hash,
-                interaction: annotations.interaction_commitment_hash
-            },
-            composition: annotations.composition_commitment_hash,
-            oods_values: annotations.oods_values,
-            fri: FriUnsentCommitment {
-                inner_layers: annotations.fri_layers_commitments, last_layer_coefficients: annotations.fri_last_layer_coefficients
-            },
-            proof_of_work: ProofOfWorkUnsentCommitment{
-                nonce: annotations.proof_of_work_nonce
-            },
-        };
-        Ok(StarkProof { config, unsent_commitment })
-    }
+        let unsent_commitment = value.stark_unsent_commitment(&annotations);
+        let witness = value.stark_witness(&annotations);
 
-    type Error = anyhow::Error;
+        Ok(StarkProof {
+            config,
+            unsent_commitment,
+            witness
+        })
+    }
 }

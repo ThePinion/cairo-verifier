@@ -76,7 +76,7 @@ impl Annotations {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct FriWitness {
-    layer: usize,
-    leaves: Vec<BigUint>,
-    authentications: Vec<BigUint>,
+    pub layer: usize,
+    pub leaves: Vec<BigUint>,
+    pub authentications: Vec<BigUint>,
 }
