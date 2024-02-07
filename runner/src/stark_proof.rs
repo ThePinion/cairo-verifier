@@ -5,6 +5,7 @@ use crate::ast::{Expr, Exprs};
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct StarkProof {
     pub config: StarkConfig,
+    pub public_input: CairoPublicInput,
     pub unsent_commitment: StarkUnsentCommitment,
     pub witness: StarkWitness,
 }
@@ -135,11 +136,47 @@ pub struct FriLayerWitness {
     pub table_witness: TableCommitmentWitnessFlat,
 }
 
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
+pub struct CairoPublicInput {
+    pub log_n_steps: u32,
+    pub range_check_min: u32,
+    pub range_check_max: u32,
+    pub layout: BigUint,
+    pub dynamic_params: Vec<()>, //TODO: Define this type
+    pub n_segments: usize,
+    pub segments: Vec<SegmentInfo>,
+    pub padding_addr: u32,
+    pub padding_value: BigUint,
+    pub main_page_len: usize,
+    pub main_page: Vec<PubilcMemoryCell>,
+    pub n_continuous_pages: usize,
+    pub continuous_page_headers: Vec<BigUint>,
+}
+
+
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
+pub struct PubilcMemoryCell {
+    pub address: u32,
+    pub value: BigUint,
+}
+
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
+pub struct SegmentInfo {
+    pub begin_addr: u32,
+    pub stop_ptr: u32,
+}
+
 pub trait IntoAst {
     fn into_ast(self) -> Vec<Expr>;
 }
 
 impl IntoAst for u32 {
+    fn into_ast(self) -> Vec<Expr> {
+        vec![Expr::Value(format!("{self}"))]
+    }
+}
+
+impl IntoAst for usize {
     fn into_ast(self) -> Vec<Expr> {
         vec![Expr::Value(format!("{self}"))]
     }
@@ -161,6 +198,7 @@ impl IntoAst for StarkProof {
     fn into_ast(self) -> Vec<Expr> {
         [
             self.config.into_ast(),
+            self.public_input.into_ast(),
             self.unsent_commitment.into_ast(),
             self.witness.into_ast(),
         ]
@@ -360,6 +398,44 @@ impl IntoAst for FriLayerWitness {
                 .collect::<Vec<_>>(),
         );
         exprs.append(&mut self.table_witness.into_ast());
+        exprs
+    }
+}
+
+impl IntoAst for CairoPublicInput {
+    fn into_ast(self) -> Vec<Expr> {
+        let mut exprs = vec![];
+        exprs.append(&mut self.log_n_steps.into_ast());
+        exprs.append(&mut self.range_check_min.into_ast());
+        exprs.append(&mut self.range_check_max.into_ast());
+        exprs.append(&mut self.layout.into_ast());
+        exprs.push(Expr::Array(vec![]));
+        exprs.append(&mut self.n_segments.into_ast());
+        exprs.append(&mut self.segments.into_ast());
+        exprs.append(&mut self.padding_addr.into_ast());
+        exprs.append(&mut self.padding_value.into_ast());
+        exprs.append(&mut self.main_page_len.into_ast());
+        exprs.append(&mut self.main_page.into_ast());
+        exprs.append(&mut self.n_continuous_pages.into_ast());
+        exprs.append(&mut self.continuous_page_headers.into_ast());
+        exprs
+    }
+}
+
+impl IntoAst for SegmentInfo {
+    fn into_ast(self) -> Vec<Expr> {
+        let mut exprs = vec![];
+        exprs.append(&mut self.begin_addr.into_ast());
+        exprs.append(&mut self.stop_ptr.into_ast());
+        exprs
+    }
+}
+
+impl IntoAst for PubilcMemoryCell {
+    fn into_ast(self) -> Vec<Expr> {
+        let mut exprs = vec![];
+        exprs.append(&mut self.address.into_ast());
+        exprs.append(&mut self.value.into_ast());
         exprs
     }
 }

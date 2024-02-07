@@ -10,6 +10,7 @@ mod json_parser;
 mod layout;
 mod stark_proof;
 mod utils;
+mod builtins;
 
 // lalrpop_mod!(pub parser);
 

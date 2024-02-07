@@ -3,7 +3,7 @@ use regex::Regex;
 
 use super::annotation_kind::ZAlpha;
 
-trait FromStrHex: Sized {
+pub trait FromStrHex: Sized {
     fn from_str_hex(val: &str) -> Option<Self>;
 }
 

@@ -1,30 +1,32 @@
+
+
+use std::fmt::Display;
+
 use serde::Deserialize;
 
-#[derive(Debug, Clone, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum Layout {
     Recursive,
 }
 
-impl<'de> Deserialize<'de> for Layout {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let s = String::deserialize(deserializer)?;
-        Layout::from_str(&s).map_err(serde::de::Error::custom)
-    }
-}
+
 
 impl Layout {
-    pub fn from_str(s: &str) -> anyhow::Result<Self> {
-        match s {
-            "recursive" => Ok(Layout::Recursive),
-            _ => anyhow::bail!("Unknown layout: {}", s),
-        }
-    }
     pub fn get_consts(&self) -> LayoutConstants {
         match self {
             Layout::Recursive => LayoutConstants::recursive(),
+        }
+    }
+    pub fn bytes_encode(&self) -> Vec<u8> {
+        self.to_string().as_bytes().to_vec()
+    }
+}
+
+impl Display for Layout {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Layout::Recursive => write!(f, "recursive"),
         }
     }
 }
